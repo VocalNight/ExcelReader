@@ -1,10 +1,28 @@
-﻿using OfficeOpenXml;
+﻿using ExcelReader;
+using Microsoft.EntityFrameworkCore;
+using OfficeOpenXml;
 
 string filePath = "C:\\Programming\\testing.xlsx";
+var headers = new List<string>();
 
 List<Dictionary<string, object>> excelData = ReadExcelToList(filePath);
+var context = new ExcelContext();
 
-    foreach (var row in excelData)
+using (context)
+{
+    context.Database.EnsureDeleted();
+    context.Database.Migrate();
+
+    // Dynamically create a table with columns based on the Excel headers
+    CreateTable(context, "DynamicTables", headers);
+
+    // Populate the table with data from the Excel sheet
+    PopulateTable(context, "DynamicTables", headers, excelData);
+}
+
+
+
+foreach (var row in excelData)
     {
         foreach (var kvp in row)
         {
@@ -23,8 +41,6 @@ List<Dictionary<string, object>> ReadExcelToList( string filePath )
 
         int rowCount = worksheet.Dimension.Rows;
         int colCount = worksheet.Dimension.Columns;
-
-        var headers = new List<string>();
 
         // Read headers from the first row
         for (int col = 1; col <= colCount; col++)
@@ -51,3 +67,32 @@ List<Dictionary<string, object>> ReadExcelToList( string filePath )
 
     return excelData;
 }
+
+static void CreateTable( ExcelContext dbContext, string tableName, List<string> columns )
+{
+    // Build a SQL command to create the table dynamically
+    string createTableSql = $"CREATE TABLE {tableName} (Id INT PRIMARY KEY IDENTITY(1,1), {string.Join(", ", columns.Select(c => $"{c} NVARCHAR(MAX)"))})";
+
+    // Execute the SQL command to create the table
+    dbContext.Database.ExecuteSqlRaw(createTableSql);
+}
+
+static void PopulateTable( ExcelContext dbContext, string tableName, List<string> columns, List<Dictionary<string, object>> data )
+{
+    foreach (var row in data)
+    {
+        // Create an instance of the DynamicTable model and set properties dynamically
+        var dynamicTableInstance = new DynamicTable();
+
+        foreach (var column in columns)
+        {
+            var value = row.ContainsKey(column) ? row[column]?.ToString() : null;
+            dynamicTableInstance.GetType().GetProperty(column)?.SetValue(dynamicTableInstance, value);
+        }
+
+        // Add the instance to the DbSet and save changes
+        dbContext.Add(dynamicTableInstance);
+        dbContext.SaveChanges();
+    }
+}
+
