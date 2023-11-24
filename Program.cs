@@ -1,7 +1,4 @@
-﻿using ExcelReader;
-using Microsoft.Data.SqlClient;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations.Operations.Builders;
+﻿using Microsoft.Data.SqlClient;
 using OfficeOpenXml;
 using System.Configuration;
 using System.Data;
@@ -38,6 +35,65 @@ Console.WriteLine("Saving to the database.");
 // Perform other initialization steps if needed
 
 Console.WriteLine("Database recreated successfully.");
+
+ShowTable();
+
+
+void ShowTable()
+{
+
+    DataTable resultTable = new DataTable();
+    using (var connection = new SqlConnection(ConfigurationManager.AppSettings.Get("DatabaseConnectionString")))
+    {
+        connection.Open();
+
+        using (var command = new SqlCommand("Select * from FileRead", connection))
+        {
+            using (var reader = command.ExecuteReader())
+            {
+                // Create columns in the result DataTable dynamically based on the database schema
+                for (int i = 0; i < reader.FieldCount; i++)
+                {
+                    resultTable.Columns.Add(reader.GetName(i), typeof(string));
+                }
+
+                // Populate the result DataTable with data
+                while (reader.Read())
+                {
+                    var dataRow = resultTable.NewRow();
+
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        dataRow[i] = reader[i].ToString();
+                    }
+
+                    resultTable.Rows.Add(dataRow);
+                }
+            }
+        }
+    }
+
+    // Display the result
+    DisplayResult(resultTable);
+}
+
+void DisplayResult( DataTable resultTable )
+{
+    foreach (DataColumn column in resultTable.Columns)
+    {
+        Console.Write($"{column.ColumnName}\t");
+    }
+    Console.WriteLine();
+
+    foreach (DataRow row in resultTable.Rows)
+    {
+        foreach (var item in row.ItemArray)
+        {
+            Console.Write($"{item}\t");
+        }
+        Console.WriteLine();
+    }
+}
 
 static void PopulateTable(string file, string connectionString, DataTable columnHeaders, string databaseName)
 {
@@ -201,96 +257,3 @@ static void CreateDatabase( string connectionString, string databaseName )
         }
     }
 }
-
-/*
-string filePath = "C:\\Programming\\testing.xlsx";
-var headers = new List<string>();
-
-List<Dictionary<string, object>> excelData = ReadExcelToList(filePath);
-var context = new ExcelContext();
-
-using (context)
-{
-    context.Database.EnsureDeleted();
-    context.Database.Migrate();
-
-    // Dynamically create a table with columns based on the Excel headers
-    CreateTable(context, "DynamicTables", headers);
-
-    // Populate the table with data from the Excel sheet
-    PopulateTable(context, "DynamicTables", headers, excelData);
-}
-
-
-
-List<Dictionary<string, object>> ReadExcelToList( string filePath )
-{
-    List<Dictionary<string, object>> excelData = new List<Dictionary<string, object>>();
-
-    using (var package = new ExcelPackage(new System.IO.FileInfo(filePath)))
-    {
-        var worksheet = package.Workbook.Worksheets[0]; // Assuming data is on the first worksheet
-
-        int rowCount = worksheet.Dimension.Rows;
-        int colCount = worksheet.Dimension.Columns;
-
-        // Read headers from the first row
-        for (int col = 1; col <= colCount; col++)
-        {
-            string header = worksheet.Cells[1, col].Text;
-            headers.Add(header.Replace(" ", "_").Trim());
-        }
-
-        // Read data from subsequent rows
-        for (int row = 2; row <= rowCount; row++)
-        {
-            var rowData = new Dictionary<string, object>();
-
-            for (int col = 1; col <= colCount; col++)
-            {
-                string header = headers[col - 1];
-                string cellValue = worksheet.Cells[row, col].Text;
-
-                rowData[header] = cellValue;
-            }
-
-            excelData.Add(rowData);
-        }
-    }
-
-    return excelData;
-}
-
-static void CreateTable( ExcelContext dbContext, string tableName, List<string> columns )
-{
-    // Build a SQL command to create the table dynamically
-    string createTableSql = $"CREATE TABLE {tableName} (Id INT PRIMARY KEY IDENTITY(1,1), {string.Join(", ", columns.Select(c => $"{c} NVARCHAR(MAX)"))})";
-    Console.WriteLine(createTableSql);
-
-    // Execute the SQL command to create the table
-    dbContext.Database.ExecuteSqlRaw(createTableSql);
-}
-
-static void PopulateTable( ExcelContext dbContext, string tableName, List<string> columns, List<Dictionary<string, object>> data )
-{
-    foreach (var row in data)
-    {
-        // Create an instance of the DynamicTable model and set properties dynamically
-        var dynamicTableInstance = new DynamicTable
-        {
-            DynamicProperties = new Dictionary<string, object>()
-        };
-
-        foreach (var column in columns)
-        {
-            var value = row.ContainsKey(column) ? row[column]?.ToString() : null;
-            dynamicTableInstance.DynamicProperties[column] = value;
-        }
-
-        // Add the instance to the DbSet and save changes
-        dbContext.Add(dynamicTableInstance);
-        dbContext.SaveChanges();
-    }
-}
-
-*/
