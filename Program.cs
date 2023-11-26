@@ -1,8 +1,8 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using ConsoleTableExt;
+using Microsoft.Data.SqlClient;
 using OfficeOpenXml;
 using System.Configuration;
 using System.Data;
-using System.Reflection.PortableExecutable;
 
 
 
@@ -66,15 +66,19 @@ void ShowTable()
                     {
                         dataRow[i] = reader[i].ToString();
                     }
-
+                    
                     resultTable.Rows.Add(dataRow);
+                    
                 }
             }
         }
     }
 
-    // Display the result
-    DisplayResult(resultTable);
+    var tableBuilder = ConsoleTableBuilder.From(resultTable)
+        .WithFormat(ConsoleTableBuilderFormat.Minimal);
+
+    // Print the table to the console
+    tableBuilder.ExportAndWriteLine();
 }
 
 void DisplayResult( DataTable resultTable )
