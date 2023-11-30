@@ -11,7 +11,7 @@ var connectionString = ConfigurationManager.AppSettings.Get("ConnectionString");
 
 // Your database name
 string databaseName = "ArquiveReader";
-var file = "C:\\Programming\\testing.xlsx";
+var file = ConfigurationManager.AppSettings.Get("FilePath");
 
 // Drop the database if it exists
 DropDatabaseIfExists(connectionString, databaseName);
@@ -30,7 +30,6 @@ PopulateTable(file, connectionString, columnHeaders, databaseName);
 Console.WriteLine("Saving to the database.");
 
 // Save data to the database
-//SaveDataToDatabase(dt, connectionString);
 
 // Perform other initialization steps if needed
 
@@ -101,7 +100,7 @@ void DisplayResult( DataTable resultTable )
 
 static void PopulateTable(string file, string connectionString, DataTable columnHeaders, string databaseName)
 {
-    using (var package = new ExcelPackage(file))
+    using (ExcelPackage package = new ExcelPackage(file))
     {
 
         var worksheet = package.Workbook.Worksheets[0];
@@ -115,8 +114,6 @@ static void PopulateTable(string file, string connectionString, DataTable column
             for (int col = 1; col <= worksheet.Dimension.End.Column; col++)
             {
                 // Use the column name from excelSchema to get the correct index
-                
-
                 var columnName = columnHeaders.Columns[col - 1].ColumnName;
                 dataRow[columnName] = worksheet.Cells[row, col].Text;
 
@@ -156,18 +153,15 @@ static DataTable GetHeaders(string filePath)
 {
     DataTable excelSchema = new DataTable();
 
-    using (var package = new ExcelPackage(filePath))
-    {
-        // Assume the first worksheet is your target
+    using (ExcelPackage package = new ExcelPackage(filePath))
+    {        
         var worksheet = package.Workbook.Worksheets[0];
-
-        // Populate excelSchema with column names from Excel
+  
         foreach (var header in worksheet.Cells["A1:Z1"])
         {
             excelSchema.Columns.Add(header.Text);
         }
     }
-
     return excelSchema;
 }
 
@@ -220,8 +214,6 @@ static void SaveDataToDatabase( DataTable dt, string connectionString )
 
 static DataTable LoadExcelData( string filePath )
 {
-    // Load Excel data into a DataTable using EPPlus or another library
-    // Example using EPPlus
     using (var package = new OfficeOpenXml.ExcelPackage(new System.IO.FileInfo(filePath)))
     {
         var worksheet = package.Workbook.Worksheets[0];
