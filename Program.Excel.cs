@@ -4,8 +4,6 @@ using OfficeOpenXml;
 using System.Configuration;
 using System.Data;
 
-
-
 partial class Program
 {
 

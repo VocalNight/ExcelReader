@@ -15,7 +15,6 @@ partial class Program
                                       string.Join(", ", excelSchema.Columns.Cast<DataColumn>().Select(c => $"{ConvertColumnNames(c.ColumnName)} NVARCHAR(MAX)")) +
                                       ")";
                 var response = command.ExecuteNonQuery();
-                Console.WriteLine(response);
             }
         }
     }

@@ -7,6 +7,8 @@ var connectionString = ConfigurationManager.AppSettings.Get("ConnectionString");
 string databaseName = "ArquiveReader";
 var file = ConfigurationManager.AppSettings.Get("FilePath");
 
+Console.WriteLine("Creating Database...");
+
 // Drop the database if it exists
 DropDatabaseIfExists(connectionString, databaseName);
 
@@ -17,12 +19,12 @@ CreateDatabase(connectionString, databaseName);
 CreateTable(connectionString, databaseName, columnHeaders);
 
 Console.WriteLine("Database created");
-Console.WriteLine("Saving to the database.");
+Console.WriteLine("Saving to the database....");
 
 // Load Excel data into a DataTable
 // Save data to the database
 PopulateTable(file, connectionString, columnHeaders, databaseName);
 
-Console.WriteLine("Database recreated successfully.");
+Console.WriteLine("Save sucessfull. Loading table!\n");
 
 ShowTable();
